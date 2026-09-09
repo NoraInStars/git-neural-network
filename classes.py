@@ -18,7 +18,7 @@ class Population():
     
     #Training Parameters
     trainType: str      #bp(backprop), mut(mutation)
-    
+    lossType: str
 
     def __init__(self,genSize: int,inputNodes: int)-> None:
         #Variables
@@ -53,10 +53,15 @@ class Population():
         self.activationLayers.append(activation)
         
     
-    def setTrainParams(self): 
-        '''sets all the parameters used in training the neural network'''
+    def setTrainParams(self,lossType: str=None): 
+        '''sets all the parameters used in training the neural network
+        lossType: set what type of loss is to be calculated (currently only supports single var output)
+            "MSE": mean squared error (y-y_{pred})^2 '''
+        if lossType: self.lossType = lossType
+
+
+
         
-    
     def train(self,
               XT: torch.tensor,
               YT: torch.tensor,
@@ -82,9 +87,8 @@ class Population():
             case "MSE": #Mean Squared Error
                 Loss = (outputLayers[-1]-YT)**2 
                 
-                
             case _: #no losstype found
-                raise ValueError("losstype not defined")
+                raise ValueError("losstype not defined. got: "+str(self.lossType)+" of type: "+str(type(self.lossType)))
 
         
             
