@@ -20,6 +20,10 @@ class Population():
     trainType: str      #bp(backprop), mut(mutation)
     lossType: str
 
+    mutateScalar: float
+    filterMaskStrenth: float    #0.0-1.0 how much of the data should be passed onto next gen. 0=None 1=All
+
+
     def __init__(self,genSize: int,inputNodes: int)-> None:
         #Variables
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -34,7 +38,6 @@ class Population():
         self.activationLayers = []
         
     
-        
         
         
     def addLayer(self, newNodes: int, activation: str = None) -> None:
@@ -66,8 +69,9 @@ class Population():
               XT: torch.tensor,
               YT: torch.tensor,
               generations: int):
+
         
-        #Forward pass
+        #Forward pass---------------------------------------------
         
         outputpreLayer=[]           
         outputLayers=[input.unsqueeze(0)] #Format networkN x inputN x data
@@ -76,12 +80,7 @@ class Population():
             outputpreLayer.append(torch.matmul(outputLayers[-1],layer)+bias)
             #activation
             outputLayers.append(torch.relu(outputpreLayer[-1]))
-        
-        #----------------------------------
-        #--------------TODO----------------
-        #----------Calculate-Loss----------
-        #----------------------------------
-        
+
         #Calculate Loss
         match self.lossType:
             case "MSE": #Mean Squared Error
@@ -91,19 +90,19 @@ class Population():
                 raise ValueError("losstype not defined. got: "+str(self.lossType)+" of type: "+str(type(self.lossType)))
 
         
+
+
             
-        #Backward pass
+        #Backward pass------------------------------------------------
             #Neurons
-        neuronGrad = [Loss] #bias gradient      #Format networkN x inputN x data
+        neuronGrad = [Loss]  #bias gradient      #Format networkN x inputN x data
         
         for i in list(reversed(range(len(self.popLayers))))[:-1]:
-            mask = outputpreLayer[i-1] >= 0    #Relu activation mask
+            mask = outputpreLayer[i-1] >= 0    #Relu activation mask TODO make general
             PostNeuron = torch.matmul(neuronGrad[0],torch.transpose(self.popLayers[i],1,2))
             neuronGrad.insert(0,PostNeuron*mask)
-            
-        #Backward pass
+    
             #Weights
-
         weightGrad=[]   #weight gradient        #Format networkN x inputN x data x data
         for i in reversed(range(len(neuronGrad))):
             weightGrad.insert(0,torch.matmul(outputLayers[i].unsqueeze(3),neuronGrad[i].unsqueeze(2)))
@@ -115,5 +114,12 @@ class Population():
         #-------------Tensor---------------
 
             
+        #Scale gradients
+            #perhaps a clamped noise matrix so that not all data is passed forward
+            #scale by scalar (woagh, profound)
+            #scale each layer by its actual loss, so that inputs that were very precise dont have to be as adjusted (NVM the original loss has that effect)        
+
+        #Mutate---------------------------------
+            #Bias
         
-        
+
